@@ -4,5 +4,9 @@ project(LostAndFound LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(LostAndFound src/main.cpp)
+add_executable(LostAndFound
+                src/main.cpp
+                src/ItemRepository.cpp
+                src/Menu.cpp
+                )
 target_include_directories(LostAndFound PRIVATE include)
