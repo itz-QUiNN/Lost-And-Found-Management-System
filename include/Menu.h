@@ -81,6 +81,7 @@ public:
                 }
 
             } else if (mode == 0) {
+                repo_.save("items.csv");
                 std::cout << "Good Bye...!\n";
             } else {
                 std::cout << "Invalid choice.\n";

@@ -5,10 +5,10 @@
 
 int main () {
     ItemRepository repo;
+    repo.load("items.csv");
+    
     Menu menu(repo);
     menu.run();
-
-    // std::cout << toLowerCase("WaLlEt") << "\n";
 
     return 0;
 }

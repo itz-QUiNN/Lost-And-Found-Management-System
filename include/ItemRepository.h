@@ -2,6 +2,9 @@
 #include <vector>
 #include <iostream>
 #include <cctype>
+#include <ctime>
+#include <fstream>
+#include <sstream>
 #include "Item.h"
 
 std::string toLowerCase(const std::string& text) {
@@ -12,11 +15,28 @@ std::string toLowerCase(const std::string& text) {
     return result;
 }
 
+time_t parseDate(const std::string& dateStr) {
+    struct tm timeStruct = {};
+    sscanf(dateStr.c_str(), "%d-%d-%d", &timeStruct.tm_year, &timeStruct.tm_mon, &timeStruct.tm_mday);
+    timeStruct.tm_year -= 1900;
+    timeStruct.tm_mon -=1;
+    return mktime(&timeStruct);
+}
+
+std::string getTodayDate() {
+    time_t now = time(nullptr);
+    struct tm* localTime =  localtime(&now);
+    char buffer[11];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d", localTime);
+    return std::string(buffer);
+}
+
 class ItemRepository {
 public:
     void reportItem(Item newItem) {
         newItem.itemId = nextItemId_;
         nextItemId_++;
+        newItem.reportDate = getTodayDate();
         items_.push_back(newItem);
     }
 
@@ -55,8 +75,14 @@ public:
     }
 
     void searchByDate(const std::string& date) const {
+        time_t searchTime = parseDate(date);
+
         for (const Item& item : items_) {
-            if (item.reportDate == date && item.status == "unclaimed") {
+            time_t itemTime = parseDate(item.reportDate);
+            double seconndsDiff = difftime(itemTime, searchTime);
+            double daysDiff = seconndsDiff / (60 * 60 * 24);
+
+            if (0 <= daysDiff && daysDiff < 14 && item.status == "unclaimed") {
                 std::cout << "ID: " << item.itemId
                         << ", Name: " << item.itemName
                         << ", Description: " << item.description << "\n";
@@ -73,6 +99,44 @@ public:
             }
         }
         std::cout << "Item not found or already cliamed.\n";
+    }
+
+    void save(const std::string& filename) const {
+        std::ofstream file(filename);
+        for (const Item& item : items_) {
+            file << item.itemId << ","
+                << item.reporterId << ","
+                << item.itemName << ","
+                << item.description << ","
+                << item.foundLocation << ","
+                << item.status << ","
+                << item.reportDate << "\n";
+        }
+    }
+
+    void load(const std::string& filename) {
+        std::ifstream file(filename);
+        std::string line;
+
+        while (std::getline(file, line)) {
+            std::stringstream ss(line);
+            std::string field;
+            Item item;
+
+            std::getline(ss, field, ','); item.itemId = std::stoi(field);
+            std::getline(ss, field, ','); item.reporterId = std::stoi(field);
+            std::getline(ss, field, ','); item.itemName = field;
+            std::getline(ss, field, ','); item.description = field;
+            std::getline(ss, field, ','); item.foundLocation = std::stoi(field);
+            std::getline(ss, field, ','); item.status = field;
+            std::getline(ss, item.reportDate, ',');
+
+            items_.push_back(item);
+
+            if (item.itemId >= nextItemId_) {
+                nextItemId_ = item.itemId + 1;
+            }
+        }
     }
 
 private:
